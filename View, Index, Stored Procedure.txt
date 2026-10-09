@@ -1,0 +1,171 @@
+```sql
+CREATE DATABASE IF NOT EXISTS ProductDemo;
+USE ProductDemo;
+
+CREATE TABLE IF NOT EXISTS Products (
+    Id INT AUTO_INCREMENT PRIMARY KEY,
+    productCode VARCHAR(20) NOT NULL,
+    productName VARCHAR(100) NOT NULL,
+    productPrice DECIMAL(12,2) NOT NULL,
+    productAmount INT NOT NULL DEFAULT 0,
+    productDescription TEXT,
+    productStatus TINYINT NOT NULL DEFAULT 1
+);
+
+INSERT INTO Products
+(productCode, productName, productPrice, productAmount,
+ productDescription, productStatus)
+VALUES
+('P001', 'Laptop Dell', 15990000, 12, 'Laptop hoc tap', 1),
+('P002', 'Mouse Logitech', 299000, 40, 'Chuot khong day', 1),
+('P003', 'Keyboard Keychron', 2190000, 18, 'Ban phim co', 1),
+('P004', 'Monitor Samsung', 3290000, 10, 'Man hinh 24 inch', 1),
+('P005', 'USB Kingston', 189000, 60, 'USB 64GB', 1);
+
+-- Bước 3: Kiểm tra trước khi tạo Index
+EXPLAIN
+SELECT * FROM Products
+WHERE productCode = 'P003';
+
+EXPLAIN
+SELECT * FROM Products
+WHERE productName = 'Mouse Logitech'
+AND productPrice = 299000;
+
+-- Tạo Unique Index
+CREATE UNIQUE INDEX idx_products_productCode
+ON Products(productCode);
+
+-- Tạo Composite Index
+CREATE INDEX idx_products_name_price
+ON Products(productName, productPrice);
+
+-- Kiểm tra sau khi tạo Index
+EXPLAIN
+SELECT * FROM Products
+WHERE productCode = 'P003';
+
+EXPLAIN
+SELECT * FROM Products
+WHERE productName = 'Mouse Logitech'
+AND productPrice = 299000;
+
+SHOW INDEX FROM Products;
+
+-- Bước 4: Tạo View
+CREATE OR REPLACE VIEW product_views AS
+SELECT productCode, productName,
+       productPrice, productStatus
+FROM Products;
+
+SELECT * FROM product_views;
+
+-- Sửa View: chỉ lấy sản phẩm đang hoạt động
+CREATE OR REPLACE VIEW product_views AS
+SELECT productCode, productName,
+       productPrice, productStatus
+FROM Products
+WHERE productStatus = 1;
+
+SELECT * FROM product_views;
+
+-- Xóa View
+DROP VIEW IF EXISTS product_views;
+
+-- Bước 5: Stored Procedure lấy tất cả sản phẩm
+DROP PROCEDURE IF EXISTS sp_getAllProducts;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_getAllProducts()
+BEGIN
+    SELECT * FROM Products;
+END //
+
+DELIMITER ;
+
+-- Stored Procedure thêm sản phẩm
+DROP PROCEDURE IF EXISTS sp_addProduct;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_addProduct(
+    IN p_code VARCHAR(20),
+    IN p_name VARCHAR(100),
+    IN p_price DECIMAL(12,2),
+    IN p_amount INT,
+    IN p_description TEXT,
+    IN p_status TINYINT
+)
+BEGIN
+    INSERT INTO Products
+    (productCode, productName, productPrice,
+     productAmount, productDescription, productStatus)
+    VALUES
+    (p_code, p_name, p_price, p_amount,
+     p_description, p_status);
+END //
+
+DELIMITER ;
+
+-- Stored Procedure sửa sản phẩm theo Id
+DROP PROCEDURE IF EXISTS sp_updateProduct;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_updateProduct(
+    IN p_id INT,
+    IN p_code VARCHAR(20),
+    IN p_name VARCHAR(100),
+    IN p_price DECIMAL(12,2),
+    IN p_amount INT,
+    IN p_description TEXT,
+    IN p_status TINYINT
+)
+BEGIN
+    UPDATE Products
+    SET productCode = p_code,
+        productName = p_name,
+        productPrice = p_price,
+        productAmount = p_amount,
+        productDescription = p_description,
+        productStatus = p_status
+    WHERE Id = p_id;
+END //
+
+DELIMITER ;
+
+-- Stored Procedure xóa sản phẩm theo Id
+DROP PROCEDURE IF EXISTS sp_deleteProduct;
+
+DELIMITER //
+
+CREATE PROCEDURE sp_deleteProduct(IN p_id INT)
+BEGIN
+    DELETE FROM Products
+    WHERE Id = p_id;
+END //
+
+DELIMITER ;
+
+-- Kiểm tra các Stored Procedure
+CALL sp_getAllProducts();
+
+CALL sp_addProduct(
+    'P006', 'Tablet Samsung', 5990000, 5,
+    'May tinh bang', 1
+);
+
+CALL sp_getAllProducts();
+
+CALL sp_updateProduct(
+    6, 'P006', 'Tablet Samsung Updated',
+    5790000, 7, 'May tinh bang da cap nhat', 1
+);
+
+CALL sp_getAllProducts();
+
+CALL sp_deleteProduct(6);
+
+CALL sp_getAllProducts();
+```
